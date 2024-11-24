@@ -3,6 +3,7 @@ using OpenTK.Windowing.Common;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Security.AccessControl;
 using System.Text;
@@ -15,12 +16,12 @@ namespace Game
         private float SPEED = 8F;
         private float SCREENWIDTH;
         private float SCREENHEIGHT;
-        private float SENSITIVITY = 100f;
+        private float SENSITIVITY = 100.0f;
 
         public Vector3 position;
 
         Vector3 up = Vector3.UnitY;
-        Vector3 front = -Vector3.UnitZ;
+        Vector3 front = Vector3.UnitZ;
         Vector3 side = Vector3.UnitX;
 
         private float pitch;

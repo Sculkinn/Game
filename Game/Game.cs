@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using Game.Graphics;
+using System.Reflection;
 
 namespace Game
 {
@@ -106,14 +107,13 @@ namespace Game
             22, 23, 20
         };
 
-        VAO vao;
-        IBO ibo;
-        ShaderProgram program;
-        Texture texture;
-
         Camera camera;
 
-        float yRot = 0f;
+        Object cube1;
+        Object cube2;
+
+        Matrix4 trans1;
+        Matrix4 trans2;
 
         int width, height;
 
@@ -137,68 +137,66 @@ namespace Game
         {
             base.OnLoad();
 
-            vao = new VAO();
-            VBO vbo = new VBO(vertices);
-            vao.LinkToVao(0, 3, vbo);
-            VBO uvVbo = new VBO(texCoords);
-            vao.LinkToVao(1, 2, uvVbo);
-
-            ibo = new IBO(indices);
-
-            program = new ShaderProgram("Default.vert", "Default.frag");
-
-            texture = new Texture("Dirt.png");
+            cube1 = new Object(vertices, texCoords, indices, "Dirt.png", "Default.vert", "Default.frag");
+            cube2 = new Object(vertices, texCoords, indices, "Wood.png", "Default.vert", "Default.frag");
 
             GL.Enable(EnableCap.DepthTest);
 
             camera = new Camera(width, height, Vector3.Zero);
             CursorState = CursorState.Grabbed;
+
+            trans1 = Matrix4.CreateTranslation(0f, 0f, -3f);
+            trans2 = Matrix4.CreateTranslation(0f, 0f, -5f);
         }
 
         protected override void OnUnload()
         {
             base.OnUnload();
-            vao.Delete();
-            ibo.Delete();
-            texture.Delete();
-            program.Delete();
+            cube1.Delete();
+            cube2.Delete();
         }
 
         protected override void OnRenderFrame(FrameEventArgs args)
         {
-
             GL.ClearColor(0.3f, 0.3f, 1f, 1f);
-
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
-            program.Bind();
-            vao.Bind();
-            ibo.Bind();
-            texture.Bind();
-
-            Matrix4 model = Matrix4.Identity;
+            Matrix4 model1 = cube1.GetModelMatrix();
+            Matrix4 model2 = cube2.GetModelMatrix();
             Matrix4 view = camera.GetViewMatrix();
             Matrix4 projection = camera.GetProjectionMatrix();
 
-            model = Matrix4.CreateRotationY(yRot);
-            //yRot += 0.001f;
+            model1 *= trans1;
 
-            Matrix4 translation = Matrix4.CreateTranslation(0f, 0f, -3f);
+            model2 *= trans2;
 
-            model *= translation;
+            cube2.ShaderProgram.Bind();
+            cube2.Bind();
 
-            int modelLocation = GL.GetUniformLocation(program.ID, "model");
-            int viewLocation = GL.GetUniformLocation(program.ID, "view");
-            int projectionLocation = GL.GetUniformLocation(program.ID, "projection");
+            int modelLocation2 = GL.GetUniformLocation(cube2.ShaderProgram.ID, "model");
+            int viewLocation2 = GL.GetUniformLocation(cube2.ShaderProgram.ID, "view");
+            int projectionLocation2 = GL.GetUniformLocation(cube2.ShaderProgram.ID, "projection");
 
-            GL.UniformMatrix4(modelLocation, true, ref model);
-            GL.UniformMatrix4(viewLocation, true, ref view);
-            GL.UniformMatrix4(projectionLocation, true, ref projection);
+            GL.UniformMatrix4(modelLocation2, true, ref model2);
+            GL.UniformMatrix4(viewLocation2, true, ref view);
+            GL.UniformMatrix4(projectionLocation2, true, ref projection);
+
+            GL.DrawElements(PrimitiveType.Triangles, indices.Count, DrawElementsType.UnsignedInt, 0);
+
+            cube1.ShaderProgram.Bind();
+            cube1.Bind();
+
+            int modelLocation1 = GL.GetUniformLocation(cube1.ShaderProgram.ID, "model");
+            int viewLocation1 = GL.GetUniformLocation(cube1.ShaderProgram.ID, "view");
+            int projectionLocation1 = GL.GetUniformLocation(cube1.ShaderProgram.ID, "projection");
+
+            GL.UniformMatrix4(modelLocation1, true, ref model1);
+            GL.UniformMatrix4(viewLocation1, true, ref view);
+            GL.UniformMatrix4(projectionLocation1, true, ref projection);
 
             GL.DrawElements(PrimitiveType.Triangles, indices.Count, DrawElementsType.UnsignedInt, 0);
 
             Context.SwapBuffers();
-
             base.OnRenderFrame(args);
         }
 
@@ -211,6 +209,14 @@ namespace Game
             if (input.IsKeyDown(Keys.Escape))
             {
                 Close();
+            }
+            if (input.IsKeyDown(Keys.Left))
+            {
+                trans1 = Matrix4.CreateTranslation(trans1.M41, trans1.M42, trans1.M43 + 0.001f);
+            }
+            if (input.IsKeyDown(Keys.Right))
+            {
+                trans1 = Matrix4.CreateTranslation(trans1.M41, trans1.M42, trans1.M43 + -0.001f);
             }
         }
     }
