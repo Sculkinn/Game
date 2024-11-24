@@ -51,6 +51,40 @@ namespace Game
             new Vector3(-0.5f, -0.5f, -0.5f),
         };
 
+        List<Vector3> Fvertices = new List<Vector3>()
+        {
+
+            new Vector3(-10f, 0.1f, 10f),
+            new Vector3(10f, 0.1f, 10f),
+            new Vector3(10f, -0.1f, 10f),
+            new Vector3(-10f, -0.1f, 10f),
+
+            new Vector3(10f, 0.1f, 10f),
+            new Vector3(10f, 0.1f, -10f),
+            new Vector3(10f, -0.1f, -10f),
+            new Vector3(10f, -0.1f, 10f),
+
+            new Vector3(10f, 0.1f, -10f),
+            new Vector3(-10f, 0.1f, -10f),
+            new Vector3(-10f, -0.1f, -10f),
+            new Vector3(10f, -0.1f, -10f),
+
+            new Vector3(-10f, 0.1f, -10f),
+            new Vector3(-10f, 0.1f, 10f),
+            new Vector3(-10f, -0.1f, 10f),
+            new Vector3(-10f, -0.1f, -10f),
+
+            new Vector3(-10f, 0.1f, -10f),
+            new Vector3(10f, 0.1f, -10f),
+            new Vector3(10f, 0.1f, 10f),
+            new Vector3(-10f, 0.1f, 10f),
+
+            new Vector3(-10f, -0.1f, 10f),
+            new Vector3(10f, -0.1f, 10f),
+            new Vector3(10f, -0.1f, -10f),
+            new Vector3(-10f, -0.1f, -10f),
+        };
+
         List<Vector2> texCoords = new List<Vector2>()
         {
             new Vector2(0f, 1f),
@@ -112,8 +146,13 @@ namespace Game
         Object cube1;
         Object cube2;
 
+        Object floor;
+
         Matrix4 trans1;
         Matrix4 trans2;
+        Matrix4 trans3;
+
+        bool gravEnabled = false;
 
         int width, height;
 
@@ -139,6 +178,7 @@ namespace Game
 
             cube1 = new Object(vertices, texCoords, indices, "DarkGreen.png", "Default.vert", "Default.frag");
             cube2 = new Object(vertices, texCoords, indices, "DarkBlue.png", "Default.vert", "Default.frag");
+            floor = new Object(Fvertices, texCoords, indices, "Brown.png", "Default.vert", "Default.frag");
 
             GL.Enable(EnableCap.DepthTest);
 
@@ -147,9 +187,11 @@ namespace Game
 
             trans1 = Matrix4.CreateTranslation(0f, 0f, -3f);
             trans2 = Matrix4.CreateTranslation(0f, 0f, -6f);
+            trans3 = Matrix4.CreateTranslation(0f, -5f, -6f);
 
             cube1.SetModelMatrix(trans1);
             cube2.SetModelMatrix(trans2);
+            floor.SetModelMatrix(trans3);
         }
 
         protected override void OnUnload()
@@ -157,9 +199,10 @@ namespace Game
             base.OnUnload();
             cube1.Delete();
             cube2.Delete();
+            floor.Delete();
         }
 
-        private static readonly Vector3 size = new Vector3(0.5f, 0.5f, 0.5f);
+        private static readonly Vector3 size = new Vector3(5f, 0.3f, 5f);
 
         public static bool CheckCollision(Vector3 position1, Vector3 position2)
         {
@@ -181,13 +224,20 @@ namespace Game
 
             Matrix4 model1 = cube1.GetModelMatrix();
             Matrix4 model2 = cube2.GetModelMatrix();
+            Matrix4 floorModel = floor.GetModelMatrix();
             Matrix4 view = camera.GetViewMatrix();
             Matrix4 projection = camera.GetProjectionMatrix();
 
-            if (CheckCollision(cube1.Position, cube2.Position))
+            if (CheckCollision(floor.Position, cube2.Position))
             {
-                trans2 *= Matrix4.CreateTranslation(0f, 0f, -0.001f);
+                trans2 *= Matrix4.CreateTranslation(0f, 0.005f, 0f);
                 cube2.SetModelMatrix(trans2);
+            }
+
+            if (CheckCollision(floor.Position, cube1.Position))
+            {
+                trans1 *= Matrix4.CreateTranslation(0f, 0.005f, 0f);
+                cube1.SetModelMatrix(trans1);
             }
 
             cube2.ShaderProgram.Bind();
@@ -213,6 +263,19 @@ namespace Game
             GL.UniformMatrix4(modelLocation1, true, ref model1);
             GL.UniformMatrix4(viewLocation1, true, ref view);
             GL.UniformMatrix4(projectionLocation1, true, ref projection);
+            
+            floor.ShaderProgram.Bind();
+            floor.Bind();
+
+            int modelLocation3 = GL.GetUniformLocation(floor.ShaderProgram.ID, "model");
+            int viewLocation3 = GL.GetUniformLocation(floor.ShaderProgram.ID, "view");
+            int projectionLocation3 = GL.GetUniformLocation(floor.ShaderProgram.ID, "projection");
+
+            GL.UniformMatrix4(modelLocation2, true, ref floorModel);
+            GL.UniformMatrix4(viewLocation2, true, ref view);
+            GL.UniformMatrix4(projectionLocation2, true, ref projection);
+
+            GL.DrawElements(PrimitiveType.Triangles, indices.Count, DrawElementsType.UnsignedInt, 0);
 
             GL.DrawElements(PrimitiveType.Triangles, indices.Count, DrawElementsType.UnsignedInt, 0);
 
@@ -226,6 +289,13 @@ namespace Game
             MouseState mouse = MouseState;
             base.OnUpdateFrame(args);
             camera.Update(input, mouse, args);
+
+            if(gravEnabled)
+            {
+                trans2 *= Matrix4.CreateTranslation(0f, -0.005f, 0f);
+                cube2.SetModelMatrix(trans2);
+            }
+
             if (input.IsKeyDown(Keys.Escape))
             {
                 Close();
@@ -243,13 +313,17 @@ namespace Game
 
             if (input.IsKeyDown(Keys.Up))
             {
-                trans2 *= Matrix4.CreateTranslation(0f, 0f, 0.001f);
+                trans2 *= Matrix4.CreateTranslation(0f, 0f, 0.01f);
                 cube2.SetModelMatrix(trans2);
             }
             if (input.IsKeyDown(Keys.Down))
             {
-                trans2 *= Matrix4.CreateTranslation(0f, 0f, -0.001f);
+                trans2 *= Matrix4.CreateTranslation(0f, 0f, -0.01f);
                 cube2.SetModelMatrix(trans2);
+            }
+            if(input.IsKeyPressed(Keys.G))
+            {
+                gravEnabled = !gravEnabled;
             }
         }
     }
