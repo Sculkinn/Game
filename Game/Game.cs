@@ -137,8 +137,8 @@ namespace Game
         {
             base.OnLoad();
 
-            cube1 = new Object(vertices, texCoords, indices, "Dirt.png", "Default.vert", "Default.frag");
-            cube2 = new Object(vertices, texCoords, indices, "Wood.png", "Default.vert", "Default.frag");
+            cube1 = new Object(vertices, texCoords, indices, "DarkGreen.png", "Default.vert", "Default.frag");
+            cube2 = new Object(vertices, texCoords, indices, "DarkBlue.png", "Default.vert", "Default.frag");
 
             GL.Enable(EnableCap.DepthTest);
 
@@ -176,7 +176,7 @@ namespace Game
 
         protected override void OnRenderFrame(FrameEventArgs args)
         {
-            GL.ClearColor(0.3f, 0.3f, 1f, 1f);
+            GL.ClearColor(1f, 1f, 1f, 1f);
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
             Matrix4 model1 = cube1.GetModelMatrix();
@@ -186,11 +186,9 @@ namespace Game
 
             if (CheckCollision(cube1.Position, cube2.Position))
             {
-                Debug.WriteLine("Collision Detected: " + cube1.Position);
+                trans2 *= Matrix4.CreateTranslation(0f, 0f, -0.001f);
+                cube2.SetModelMatrix(trans2);
             }
-
-            //model1 = cube1.GetModelMatrix() * trans1;
-            //model2 = cube2.GetModelMatrix() * trans2;
 
             cube2.ShaderProgram.Bind();
             cube2.Bind();
