@@ -141,18 +141,15 @@ namespace Game
             22, 23, 20
         };
 
+        List<Object> objects = new List<Object>();
+
         Camera camera;
 
         Object cube1;
         Object cube2;
+        Object cube3;
 
         Object floor;
-
-        Matrix4 trans1;
-        Matrix4 trans2;
-        Matrix4 trans3;
-
-        bool gravEnabled = false;
 
         int width, height;
 
@@ -173,131 +170,107 @@ namespace Game
             this.height = e.Height;
         }
 
+        private Vector3 fsize = new Vector3(10f, 0.1f, 10f);
+        private Vector3 size = new Vector3(0.5f, 0.5f, 0.5f);
+
         protected override void OnLoad()
         {
             base.OnLoad();
 
-            cube1 = new Object(vertices, texCoords, indices, "DarkGreen.png", "Default.vert", "Default.frag");
-            cube2 = new Object(vertices, texCoords, indices, "DarkBlue.png", "Default.vert", "Default.frag");
-            floor = new Object(Fvertices, texCoords, indices, "Brown.png", "Default.vert", "Default.frag");
+            Matrix4 trans1 = Matrix4.CreateTranslation(0f, 0f, -3f);
+            Matrix4 trans2 = Matrix4.CreateTranslation(0f, 0f, -6f);
+            Matrix4 trans3 = Matrix4.CreateTranslation(0f, 0f, 0f);
+            Matrix4 trans4 = Matrix4.CreateTranslation(0f, -5f, -6f);
+
+            cube1 = new Object(vertices, texCoords, indices, "Green.png", "Default.vert", "Default.frag", size, trans1);
+            cube2 = new Object(vertices, texCoords, indices, "Blue.png", "Default.vert", "Default.frag", size, trans2);
+            cube3 = new Object(vertices, texCoords, indices, "Red.png", "Default.vert", "Default.frag", size, trans3);
+            floor = new Object(Fvertices, texCoords, indices, "Black.png", "Default.vert", "Default.frag", fsize, trans4);
+
+            objects.Add(cube1);
+            objects.Add(cube2);
+            objects.Add(cube3);
+            objects.Add(floor);
 
             GL.Enable(EnableCap.DepthTest);
 
             camera = new Camera(width, height, Vector3.Zero);
             CursorState = CursorState.Grabbed;
 
-            trans1 = Matrix4.CreateTranslation(0f, 0f, -3f);
-            trans2 = Matrix4.CreateTranslation(0f, 0f, -6f);
-            trans3 = Matrix4.CreateTranslation(0f, -5f, -6f);
-
-            cube1.SetModelMatrix(trans1);
-            cube2.SetModelMatrix(trans2);
-            floor.SetModelMatrix(trans3);
+            for (int i = 0; i < objects.Count; i++)
+            {
+                Object obj = objects[i];
+                obj.SetModelMatrix(obj.Trans);
+            }
         }
 
         protected override void OnUnload()
         {
             base.OnUnload();
-            cube1.Delete();
-            cube2.Delete();
-            floor.Delete();
+            for (int i = 0; i < objects.Count; i++)
+            {
+                objects[i].Delete();
+            }
         }
 
-        private static readonly Vector3 fsize = new Vector3(5.275f, 0.3f, 5.275f);
-        private static readonly Vector3 size = new Vector3(0.5f, 0.5f, 0.5f);
-
-        public static bool CheckFloorCollision(Vector3 position1, Vector3 position2)
+        public static bool CheckCollision(Object obj1, Object obj2)
         {
-            Vector3 min1 = position1 - fsize;
-            Vector3 max1 = position1 + fsize;
+            Vector3 size1 = obj1.Size;
+            Vector3 size2 = obj2.Size;
 
-            Vector3 min2 = position2 - fsize;
-            Vector3 max2 = position2 + fsize;
+            Vector3 min1 = obj1.Position - size1;
+            Vector3 max1 = obj1.Position + size1;
+
+            Vector3 min2 = obj2.Position - size2;
+            Vector3 max2 = obj2.Position + size2;
 
             return (min1.X <= max2.X && max1.X >= min2.X) &&
                    (min1.Y <= max2.Y && max1.Y >= min2.Y) &&
                    (min1.Z <= max2.Z && max1.Z >= min2.Z);
         }
-        public static bool CheckCollision(Vector3 position1, Vector3 position2)
-        {
-            Vector3 min1 = position1 - size;
-            Vector3 max1 = position1 + size;
 
-            Vector3 min2 = position2 - size;
-            Vector3 max2 = position2 + size;
-
-            return (min1.X <= max2.X && max1.X >= min2.X) &&
-                   (min1.Y <= max2.Y && max1.Y >= min2.Y) &&
-                   (min1.Z <= max2.Z && max1.Z >= min2.Z);
-        }
 
         protected override void OnRenderFrame(FrameEventArgs args)
         {
             GL.ClearColor(1f, 1f, 1f, 1f);
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
-            Matrix4 model1 = cube1.GetModelMatrix();
-            Matrix4 model2 = cube2.GetModelMatrix();
-            Matrix4 floorModel = floor.GetModelMatrix();
             Matrix4 view = camera.GetViewMatrix();
             Matrix4 projection = camera.GetProjectionMatrix();
 
-            if (CheckFloorCollision(floor.Position, cube2.Position))
+            for (int i = 0; i < objects.Count; i++)
             {
-                trans2 *= Matrix4.CreateTranslation(0f, 0.0065f, 0f);
-                cube2.SetModelMatrix(trans2);
+                for (int j = i + 1; j < objects.Count; j++)
+                {
+                    if (CheckCollision(objects[i], objects[j]))
+                    {
+                        objects[i].GravityAffected = false;
+                    }
+                    else
+                    {
+                        objects[i].GravityAffected = true;
+                    }
+                }
             }
 
-            if (CheckFloorCollision(floor.Position, cube1.Position))
+            for (int i = 0; i < objects.Count; i++)
             {
-                trans1 *= Matrix4.CreateTranslation(0f, 0.0065f, 0f);
-                cube1.SetModelMatrix(trans1);
+                Object obj = objects[i];
+                Matrix4 model = obj.GetModelMatrix();
+
+                obj.ShaderProgram.Bind();
+                obj.Bind();
+
+                int modelLocation = GL.GetUniformLocation(obj.ShaderProgram.ID, "model");
+                int viewLocation = GL.GetUniformLocation(obj.ShaderProgram.ID, "view");
+                int projectionLocation = GL.GetUniformLocation(obj.ShaderProgram.ID, "projection");
+
+                GL.UniformMatrix4(modelLocation, true, ref model);
+                GL.UniformMatrix4(viewLocation, true, ref view);
+                GL.UniformMatrix4(projectionLocation, true, ref projection);
+
+                GL.DrawElements(PrimitiveType.Triangles, indices.Count, DrawElementsType.UnsignedInt, 0);
             }
-
-            if (CheckCollision(cube1.Position, cube2.Position))
-            {
-                trans1 *= Matrix4.CreateTranslation(0f, 0f, 0.005f);
-                cube1.SetModelMatrix(trans1);
-            }
-
-            cube2.ShaderProgram.Bind();
-            cube2.Bind();
-
-            int modelLocation2 = GL.GetUniformLocation(cube2.ShaderProgram.ID, "model");
-            int viewLocation2 = GL.GetUniformLocation(cube2.ShaderProgram.ID, "view");
-            int projectionLocation2 = GL.GetUniformLocation(cube2.ShaderProgram.ID, "projection");
-
-            GL.UniformMatrix4(modelLocation2, true, ref model2);
-            GL.UniformMatrix4(viewLocation2, true, ref view);
-            GL.UniformMatrix4(projectionLocation2, true, ref projection);
-
-            GL.DrawElements(PrimitiveType.Triangles, indices.Count, DrawElementsType.UnsignedInt, 0);
-
-            cube1.ShaderProgram.Bind();
-            cube1.Bind();
-
-            int modelLocation1 = GL.GetUniformLocation(cube1.ShaderProgram.ID, "model");
-            int viewLocation1 = GL.GetUniformLocation(cube1.ShaderProgram.ID, "view");
-            int projectionLocation1 = GL.GetUniformLocation(cube1.ShaderProgram.ID, "projection");
-
-            GL.UniformMatrix4(modelLocation1, true, ref model1);
-            GL.UniformMatrix4(viewLocation1, true, ref view);
-            GL.UniformMatrix4(projectionLocation1, true, ref projection);
-
-            GL.DrawElements(PrimitiveType.Triangles, indices.Count, DrawElementsType.UnsignedInt, 0);
-
-            floor.ShaderProgram.Bind();
-            floor.Bind();
-
-            int modelLocation3 = GL.GetUniformLocation(floor.ShaderProgram.ID, "model");
-            int viewLocation3 = GL.GetUniformLocation(floor.ShaderProgram.ID, "view");
-            int projectionLocation3 = GL.GetUniformLocation(floor.ShaderProgram.ID, "projection");
-
-            GL.UniformMatrix4(modelLocation2, true, ref floorModel);
-            GL.UniformMatrix4(viewLocation2, true, ref view);
-            GL.UniformMatrix4(projectionLocation2, true, ref projection);
-
-            GL.DrawElements(PrimitiveType.Triangles, indices.Count, DrawElementsType.UnsignedInt, 0);
 
             Context.SwapBuffers();
             base.OnRenderFrame(args);
@@ -310,13 +283,16 @@ namespace Game
             base.OnUpdateFrame(args);
             camera.Update(input, mouse, args);
 
-            if(gravEnabled)
+            foreach (var obj in objects)
             {
-                trans2 *= Matrix4.CreateTranslation(0f, -0.0065f, 0f);
-                cube2.SetModelMatrix(trans2);
-
-                trans1 *= Matrix4.CreateTranslation(0f, -0.0065f, 0f);
-                cube1.SetModelMatrix(trans1);
+                if(obj.GravityAffected)
+                {
+                    if (obj != floor)
+                    {
+                        obj.Trans *= Matrix4.CreateTranslation(0f, -0.00075f, 0f);
+                        obj.SetModelMatrix(obj.Trans);
+                    }
+                }
             }
 
             if (input.IsKeyDown(Keys.Escape))
@@ -325,28 +301,24 @@ namespace Game
             }
             if (input.IsKeyDown(Keys.Left))
             {
-                trans1 *= Matrix4.CreateTranslation(0f, 0f, 0.001f);
-                cube1.SetModelMatrix(trans1);
+                cube1.Trans *= Matrix4.CreateTranslation(0f, 0f, 0.001f);
+                cube1.SetModelMatrix(cube1.Trans);
             }
             if (input.IsKeyDown(Keys.Right))
             {
-                trans1 *= Matrix4.CreateTranslation(0f, 0f, -0.001f);
-                cube1.SetModelMatrix(trans1);
+                cube1.Trans *= Matrix4.CreateTranslation(0f, 0f, -0.001f);
+                cube1.SetModelMatrix(cube1.Trans);
             }
 
             if (input.IsKeyDown(Keys.Up))
             {
-                trans2 *= Matrix4.CreateTranslation(0f, 0f, 0.001f);
-                cube2.SetModelMatrix(trans2);
+                cube2.Trans *= Matrix4.CreateTranslation(0f, 0f, 0.001f);
+                cube2.SetModelMatrix(cube2.Trans);
             }
             if (input.IsKeyDown(Keys.Down))
             {
-                trans2 *= Matrix4.CreateTranslation(0f, 0f, -0.001f);
-                cube2.SetModelMatrix(trans2);
-            }
-            if(input.IsKeyPressed(Keys.G))
-            {
-                gravEnabled = !gravEnabled;
+                cube2.Trans *= Matrix4.CreateTranslation(0f, 0f, -0.001f);
+                cube2.SetModelMatrix(cube2.Trans);
             }
         }
     }

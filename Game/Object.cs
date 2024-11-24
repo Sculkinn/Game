@@ -12,22 +12,29 @@ namespace Game
     {
         public Vector3 Position;
 
-        public VAO Vao { get; private set; }
-        public IBO Ibo { get; private set; }
-        public ShaderProgram ShaderProgram { get; private set; }
-        public Texture Texture { get; private set; }
+        public VAO Vao { get; set; }
+        public IBO Ibo { get; set; }
+        public ShaderProgram ShaderProgram { get; set; }
+        public Texture Texture { get; set; }
 
         private List<Vector3> vertices;
         private List<Vector2> texCoords;
         private List<uint> indices;
 
-        private Matrix4 modelMatrix;
+        public Vector3 Size { get; set; }
 
-        public Object(List<Vector3> vertices, List<Vector2> texCoords, List<uint> indices, string texturePath, string vertexShaderPath, string fragmentShaderPath)
+        public bool GravityAffected = false;
+
+        private Matrix4 modelMatrix;
+        public Matrix4 Trans;
+
+        public Object(List<Vector3> vertices, List<Vector2> texCoords, List<uint> indices, string texturePath, string vertexShaderPath, string fragmentShaderPath, Vector3 size, Matrix4 trans)
         {
             this.vertices = vertices;
             this.texCoords = texCoords;
             this.indices = indices;
+            this.Size = size;
+            this.Trans = trans;
 
             Vao = new VAO();
             VBO vertexVbo = new VBO(vertices);
