@@ -160,6 +160,7 @@ namespace Game
         {
             this.width = width;
             this.height = height;
+            this.Title = "Game";
 
             CenterWindow(new Vector2i(width, height));
         }
@@ -202,8 +203,21 @@ namespace Game
             floor.Delete();
         }
 
-        private static readonly Vector3 size = new Vector3(5f, 0.3f, 5f);
+        private static readonly Vector3 fsize = new Vector3(5.275f, 0.3f, 5.275f);
+        private static readonly Vector3 size = new Vector3(0.5f, 0.5f, 0.5f);
 
+        public static bool CheckFloorCollision(Vector3 position1, Vector3 position2)
+        {
+            Vector3 min1 = position1 - fsize;
+            Vector3 max1 = position1 + fsize;
+
+            Vector3 min2 = position2 - fsize;
+            Vector3 max2 = position2 + fsize;
+
+            return (min1.X <= max2.X && max1.X >= min2.X) &&
+                   (min1.Y <= max2.Y && max1.Y >= min2.Y) &&
+                   (min1.Z <= max2.Z && max1.Z >= min2.Z);
+        }
         public static bool CheckCollision(Vector3 position1, Vector3 position2)
         {
             Vector3 min1 = position1 - size;
@@ -228,15 +242,21 @@ namespace Game
             Matrix4 view = camera.GetViewMatrix();
             Matrix4 projection = camera.GetProjectionMatrix();
 
-            if (CheckCollision(floor.Position, cube2.Position))
+            if (CheckFloorCollision(floor.Position, cube2.Position))
             {
-                trans2 *= Matrix4.CreateTranslation(0f, 0.005f, 0f);
+                trans2 *= Matrix4.CreateTranslation(0f, 0.0065f, 0f);
                 cube2.SetModelMatrix(trans2);
             }
 
-            if (CheckCollision(floor.Position, cube1.Position))
+            if (CheckFloorCollision(floor.Position, cube1.Position))
             {
-                trans1 *= Matrix4.CreateTranslation(0f, 0.005f, 0f);
+                trans1 *= Matrix4.CreateTranslation(0f, 0.0065f, 0f);
+                cube1.SetModelMatrix(trans1);
+            }
+
+            if (CheckCollision(cube1.Position, cube2.Position))
+            {
+                trans1 *= Matrix4.CreateTranslation(0f, 0f, 0.005f);
                 cube1.SetModelMatrix(trans1);
             }
 
@@ -263,7 +283,9 @@ namespace Game
             GL.UniformMatrix4(modelLocation1, true, ref model1);
             GL.UniformMatrix4(viewLocation1, true, ref view);
             GL.UniformMatrix4(projectionLocation1, true, ref projection);
-            
+
+            GL.DrawElements(PrimitiveType.Triangles, indices.Count, DrawElementsType.UnsignedInt, 0);
+
             floor.ShaderProgram.Bind();
             floor.Bind();
 
@@ -274,8 +296,6 @@ namespace Game
             GL.UniformMatrix4(modelLocation2, true, ref floorModel);
             GL.UniformMatrix4(viewLocation2, true, ref view);
             GL.UniformMatrix4(projectionLocation2, true, ref projection);
-
-            GL.DrawElements(PrimitiveType.Triangles, indices.Count, DrawElementsType.UnsignedInt, 0);
 
             GL.DrawElements(PrimitiveType.Triangles, indices.Count, DrawElementsType.UnsignedInt, 0);
 
@@ -292,8 +312,11 @@ namespace Game
 
             if(gravEnabled)
             {
-                trans2 *= Matrix4.CreateTranslation(0f, -0.005f, 0f);
+                trans2 *= Matrix4.CreateTranslation(0f, -0.0065f, 0f);
                 cube2.SetModelMatrix(trans2);
+
+                trans1 *= Matrix4.CreateTranslation(0f, -0.0065f, 0f);
+                cube1.SetModelMatrix(trans1);
             }
 
             if (input.IsKeyDown(Keys.Escape))
@@ -313,12 +336,12 @@ namespace Game
 
             if (input.IsKeyDown(Keys.Up))
             {
-                trans2 *= Matrix4.CreateTranslation(0f, 0f, 0.01f);
+                trans2 *= Matrix4.CreateTranslation(0f, 0f, 0.001f);
                 cube2.SetModelMatrix(trans2);
             }
             if (input.IsKeyDown(Keys.Down))
             {
-                trans2 *= Matrix4.CreateTranslation(0f, 0f, -0.01f);
+                trans2 *= Matrix4.CreateTranslation(0f, 0f, -0.001f);
                 cube2.SetModelMatrix(trans2);
             }
             if(input.IsKeyPressed(Keys.G))
