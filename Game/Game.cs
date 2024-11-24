@@ -146,7 +146,10 @@ namespace Game
             CursorState = CursorState.Grabbed;
 
             trans1 = Matrix4.CreateTranslation(0f, 0f, -3f);
-            trans2 = Matrix4.CreateTranslation(0f, 0f, -5f);
+            trans2 = Matrix4.CreateTranslation(0f, 0f, -6f);
+
+            cube1.SetModelMatrix(trans1);
+            cube2.SetModelMatrix(trans2);
         }
 
         protected override void OnUnload()
@@ -154,6 +157,21 @@ namespace Game
             base.OnUnload();
             cube1.Delete();
             cube2.Delete();
+        }
+
+        private static readonly Vector3 size = new Vector3(0.5f, 0.5f, 0.5f);
+
+        public static bool CheckCollision(Vector3 position1, Vector3 position2)
+        {
+            Vector3 min1 = position1 - size;
+            Vector3 max1 = position1 + size;
+
+            Vector3 min2 = position2 - size;
+            Vector3 max2 = position2 + size;
+
+            return (min1.X <= max2.X && max1.X >= min2.X) &&
+                   (min1.Y <= max2.Y && max1.Y >= min2.Y) &&
+                   (min1.Z <= max2.Z && max1.Z >= min2.Z);
         }
 
         protected override void OnRenderFrame(FrameEventArgs args)
@@ -166,9 +184,13 @@ namespace Game
             Matrix4 view = camera.GetViewMatrix();
             Matrix4 projection = camera.GetProjectionMatrix();
 
-            model1 *= trans1;
+            if (CheckCollision(cube1.Position, cube2.Position))
+            {
+                Debug.WriteLine("Collision Detected: " + cube1.Position);
+            }
 
-            model2 *= trans2;
+            //model1 = cube1.GetModelMatrix() * trans1;
+            //model2 = cube2.GetModelMatrix() * trans2;
 
             cube2.ShaderProgram.Bind();
             cube2.Bind();
@@ -212,11 +234,24 @@ namespace Game
             }
             if (input.IsKeyDown(Keys.Left))
             {
-                trans1 = Matrix4.CreateTranslation(trans1.M41, trans1.M42, trans1.M43 + 0.001f);
+                trans1 *= Matrix4.CreateTranslation(0f, 0f, 0.001f);
+                cube1.SetModelMatrix(trans1);
             }
             if (input.IsKeyDown(Keys.Right))
             {
-                trans1 = Matrix4.CreateTranslation(trans1.M41, trans1.M42, trans1.M43 + -0.001f);
+                trans1 *= Matrix4.CreateTranslation(0f, 0f, -0.001f);
+                cube1.SetModelMatrix(trans1);
+            }
+
+            if (input.IsKeyDown(Keys.Up))
+            {
+                trans2 *= Matrix4.CreateTranslation(0f, 0f, 0.001f);
+                cube2.SetModelMatrix(trans2);
+            }
+            if (input.IsKeyDown(Keys.Down))
+            {
+                trans2 *= Matrix4.CreateTranslation(0f, 0f, -0.001f);
+                cube2.SetModelMatrix(trans2);
             }
         }
     }

@@ -10,6 +10,8 @@ namespace Game
 {
     internal class Object
     {
+        public Vector3 Position;
+
         public VAO Vao { get; private set; }
         public IBO Ibo { get; private set; }
         public ShaderProgram ShaderProgram { get; private set; }
@@ -40,6 +42,7 @@ namespace Game
             Texture = new Texture(texturePath);
 
             modelMatrix = Matrix4.Identity;
+            Position = modelMatrix.ExtractTranslation();
         }
 
         public void Bind()
@@ -52,6 +55,7 @@ namespace Game
         public void SetModelMatrix(Matrix4 matrix)
         {
             modelMatrix = matrix;
+            Position = modelMatrix.ExtractTranslation();
         }
 
         public Matrix4 GetModelMatrix()
