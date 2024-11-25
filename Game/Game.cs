@@ -149,7 +149,7 @@ namespace Game
         Object cube2;
         Object cube3;
 
-        Object floor;
+        public Object floor; //needs to be used by physics
 
         int width, height;
 
@@ -179,21 +179,21 @@ namespace Game
         {
             base.OnLoad();
 
-            Physics physics = new();
+            Physics physics = new(this);
 
-            Matrix4 trans1 = Matrix4.CreateTranslation(0f, 0f, -3f);
-            Matrix4 trans2 = Matrix4.CreateTranslation(0f, 0f, -6f);
-            Matrix4 trans3 = Matrix4.CreateTranslation(0f, 0f, 0f);
-            Matrix4 trans4 = Matrix4.CreateTranslation(0f, -10f, -6f); //y=-0.6f
+            Matrix4 Translation1 = Matrix4.CreateTranslation(0f, 0f, -3f);
+            Matrix4 Translation2 = Matrix4.CreateTranslation(0f, 0f, -6f);
+            Matrix4 Translation3 = Matrix4.CreateTranslation(0f, 0f, 0f);
+            Matrix4 Translation4 = Matrix4.CreateTranslation(0f, -10f, -6f); //y=-0.6f
 
-            cube1 = new Object(vertices, texCoords, indices, "Green.png", "Default.vert", "Default.frag", size, trans1, 3);
-            cube2 = new Object(vertices, texCoords, indices, "Blue.png", "Default.vert", "Default.frag", size, trans2, 5);
-            cube3 = new Object(vertices, texCoords, indices, "Red.png", "Default.vert", "Default.frag", size, trans3, 1);
-            floor = new Object(Fvertices, texCoords, indices, "Black.png", "Default.vert", "Default.frag", fsize, trans4, 1);
+            cube1 = new Object(vertices, texCoords, indices, "Green.png", "Default.vert", "Default.frag", size, Translation1, 3);
+            cube2 = new Object(vertices, texCoords, indices, "Blue.png", "Default.vert", "Default.frag", size, Translation2, 5);
+            cube3 = new Object(vertices, texCoords, indices, "Red.png", "Default.vert", "Default.frag", size, Translation3, 1);
+            floor = new Object(Fvertices, texCoords, indices, "Black.png", "Default.vert", "Default.frag", fsize, Translation4, 1);
             
-            objects.Add(cube1);
-            objects.Add(cube2);
             objects.Add(cube3);
+            objects.Add(cube2);
+            objects.Add(cube1);
             objects.Add(floor);
 
             GL.Enable(EnableCap.DepthTest);
@@ -204,7 +204,7 @@ namespace Game
             for (int i = 0; i < objects.Count; i++)
             {
                 Object obj = objects[i];
-                obj.SetModelMatrix(obj.Trans);
+                obj.SetModelMatrix(obj.Translation);
             }
 
             while(GlobalGravity)
@@ -222,9 +222,6 @@ namespace Game
                 objects[i].Delete();
             }
         }
-
-
-
 
         protected override void OnRenderFrame(FrameEventArgs args)
         {
@@ -271,25 +268,31 @@ namespace Game
             
             if(!cube1.GravityAffected)
             {
-                if (input.IsKeyDown(Keys.Left))
+                if(cube1.CanMove)
                 {
-                    cube1.Move(0f,0f,0.002f);
-                }
-                if (input.IsKeyDown(Keys.Right))
-                {
-                    cube1.Move(0f, 0f, -0.002f);
+                    if (input.IsKeyDown(Keys.Left))
+                    {
+                        cube1.Move(0f, 0f, 0.002f);
+                    }
+                    if (input.IsKeyDown(Keys.Right))
+                    {
+                        cube1.Move(0f, 0f, -0.002f);
+                    }
                 }
             }
 
             if(!cube2.GravityAffected)
             {
-                if (input.IsKeyDown(Keys.Up))
+                if(cube2.CanMove)
                 {
-                    cube2.Move(0f, 0f, 0.002f);
-                }
-                if (input.IsKeyDown(Keys.Down))
-                {
-                    cube2.Move(0f, 0f, -0.002f);
+                    if (input.IsKeyDown(Keys.Up))
+                    {
+                        cube2.Move(0f, 0f, 0.002f);
+                    }
+                    if (input.IsKeyDown(Keys.Down))
+                    {
+                        cube2.Move(0f, 0f, -0.002f);
+                    }
                 }
             }
         }

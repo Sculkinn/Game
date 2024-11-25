@@ -11,29 +11,53 @@ namespace Game
 {
     internal class Physics
     {
-        public Physics()
-        {
+        public Game Game;
 
+        public Physics(Game game)
+        {
+            this.Game = game;
         }
 
         public void ApplyGravity(List<Object> objects)
         {
             for (int i = 0; i < objects.Count; i++)
             {
-                for (int j = i + 1; j < objects.Count; j++)
+                if (objects[i].Size == (10f, 0.1f, 10f))
                 {
-                    if (CheckCollision(objects[i], objects[j]))
+                }
+                else
+                {
+                    for (int j = i + 1; j < objects.Count; j++)
                     {
-                        Object obj = objects[i];
-                        Object obj2 = objects[i];
-                        obj.GravityAffected = false;
-                        obj.Velocity = new Vector3(0, 0, 0);
+                        if (objects[j].Size == (10f, 0.1f, 10f))
+                        {
+                            if (CheckCollision(objects[i], objects[j]))
+                            {
+                                Object obj = objects[i];
+                                Object obj2 = objects[i];
+                                obj.GravityAffected = false;
+                                obj.Velocity = new Vector3(0, 0, 0);
 
-                        //obj.Move(0, 1, 0);
-                    }
-                    else
-                    {
-                        objects[i].GravityAffected = true;
+                                //obj.Move(0, 1, 0);
+                            }
+                            else
+                            {
+                                objects[i].GravityAffected = true;
+                            }
+                        }
+                        else
+                        {
+                            Object obj = objects[i]; //obj being pushed
+                            Object obj2 = objects[i]; //obj pushing
+                            if (CheckCollision(objects[i], objects[j]))
+                            {
+                                obj2.CanMove = false;
+                            }
+                            else
+                            {
+                                obj2.CanMove = true;
+                            }
+                        }
                     }
                 }
             }
@@ -43,8 +67,8 @@ namespace Game
                 {
                     if (obj.Weight != 0)
                     {
-                        obj.Trans *= Matrix4.CreateTranslation(obj.Velocity);
-                        obj.SetModelMatrix(obj.Trans);
+                        obj.Translation *= Matrix4.CreateTranslation(obj.Velocity);
+                        obj.SetModelMatrix(obj.Translation);
                         obj.Velocity += new Vector3(0,-0.0075f,0);
                         //0.147105
                     }
