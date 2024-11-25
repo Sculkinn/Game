@@ -4,10 +4,8 @@
     {
         static void Main(string[] args)
         {
-            using(Game game = new Game(1920,1080))
-            {
-                game.Run();
-            }
+            Game game = new Game(960, 540);
+            game.Run();
         }
     }
 }

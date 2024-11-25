@@ -141,7 +141,7 @@ namespace Game
             22, 23, 20
         };
 
-        List<Object> objects = new List<Object>();
+        public List<Object> objects = new List<Object>();
 
         Camera camera;
 
@@ -152,6 +152,8 @@ namespace Game
         Object floor;
 
         int width, height;
+
+        public bool GlobalGravity = true;
 
         public Game(int width, int height) : base(GameWindowSettings.Default, NativeWindowSettings.Default)
         {
@@ -173,20 +175,22 @@ namespace Game
         private Vector3 fsize = new Vector3(10f, 0.1f, 10f);
         private Vector3 size = new Vector3(0.5f, 0.5f, 0.5f);
 
-        protected override void OnLoad()
+        protected override async void OnLoad()
         {
             base.OnLoad();
+
+            Physics physics = new();
 
             Matrix4 trans1 = Matrix4.CreateTranslation(0f, 0f, -3f);
             Matrix4 trans2 = Matrix4.CreateTranslation(0f, 0f, -6f);
             Matrix4 trans3 = Matrix4.CreateTranslation(0f, 0f, 0f);
-            Matrix4 trans4 = Matrix4.CreateTranslation(0f, -5f, -6f);
+            Matrix4 trans4 = Matrix4.CreateTranslation(0f, -10f, -6f); //y=-0.6f
 
-            cube1 = new Object(vertices, texCoords, indices, "Green.png", "Default.vert", "Default.frag", size, trans1);
-            cube2 = new Object(vertices, texCoords, indices, "Blue.png", "Default.vert", "Default.frag", size, trans2);
-            cube3 = new Object(vertices, texCoords, indices, "Red.png", "Default.vert", "Default.frag", size, trans3);
-            floor = new Object(Fvertices, texCoords, indices, "Black.png", "Default.vert", "Default.frag", fsize, trans4);
-
+            cube1 = new Object(vertices, texCoords, indices, "Green.png", "Default.vert", "Default.frag", size, trans1, 3);
+            cube2 = new Object(vertices, texCoords, indices, "Blue.png", "Default.vert", "Default.frag", size, trans2, 5);
+            cube3 = new Object(vertices, texCoords, indices, "Red.png", "Default.vert", "Default.frag", size, trans3, 1);
+            floor = new Object(Fvertices, texCoords, indices, "Black.png", "Default.vert", "Default.frag", fsize, trans4, 1);
+            
             objects.Add(cube1);
             objects.Add(cube2);
             objects.Add(cube3);
@@ -202,6 +206,12 @@ namespace Game
                 Object obj = objects[i];
                 obj.SetModelMatrix(obj.Trans);
             }
+
+            while(GlobalGravity)
+            {
+                await Task.Delay(15);
+                physics.ApplyGravity(objects);
+            }
         }
 
         protected override void OnUnload()
@@ -213,21 +223,7 @@ namespace Game
             }
         }
 
-        public static bool CheckCollision(Object obj1, Object obj2)
-        {
-            Vector3 size1 = obj1.Size;
-            Vector3 size2 = obj2.Size;
 
-            Vector3 min1 = obj1.Position - size1;
-            Vector3 max1 = obj1.Position + size1;
-
-            Vector3 min2 = obj2.Position - size2;
-            Vector3 max2 = obj2.Position + size2;
-
-            return (min1.X <= max2.X && max1.X >= min2.X) &&
-                   (min1.Y <= max2.Y && max1.Y >= min2.Y) &&
-                   (min1.Z <= max2.Z && max1.Z >= min2.Z);
-        }
 
 
         protected override void OnRenderFrame(FrameEventArgs args)
@@ -237,21 +233,6 @@ namespace Game
 
             Matrix4 view = camera.GetViewMatrix();
             Matrix4 projection = camera.GetProjectionMatrix();
-
-            for (int i = 0; i < objects.Count; i++)
-            {
-                for (int j = i + 1; j < objects.Count; j++)
-                {
-                    if (CheckCollision(objects[i], objects[j]))
-                    {
-                        objects[i].GravityAffected = false;
-                    }
-                    else
-                    {
-                        objects[i].GravityAffected = true;
-                    }
-                }
-            }
 
             for (int i = 0; i < objects.Count; i++)
             {
@@ -283,42 +264,33 @@ namespace Game
             base.OnUpdateFrame(args);
             camera.Update(input, mouse, args);
 
-            foreach (var obj in objects)
-            {
-                if(obj.GravityAffected)
-                {
-                    if (obj != floor)
-                    {
-                        obj.Trans *= Matrix4.CreateTranslation(0f, -0.00075f, 0f);
-                        obj.SetModelMatrix(obj.Trans);
-                    }
-                }
-            }
-
             if (input.IsKeyDown(Keys.Escape))
             {
                 Close();
             }
-            if (input.IsKeyDown(Keys.Left))
+            
+            if(!cube1.GravityAffected)
             {
-                cube1.Trans *= Matrix4.CreateTranslation(0f, 0f, 0.001f);
-                cube1.SetModelMatrix(cube1.Trans);
-            }
-            if (input.IsKeyDown(Keys.Right))
-            {
-                cube1.Trans *= Matrix4.CreateTranslation(0f, 0f, -0.001f);
-                cube1.SetModelMatrix(cube1.Trans);
+                if (input.IsKeyDown(Keys.Left))
+                {
+                    cube1.Move(0f,0f,0.002f);
+                }
+                if (input.IsKeyDown(Keys.Right))
+                {
+                    cube1.Move(0f, 0f, -0.002f);
+                }
             }
 
-            if (input.IsKeyDown(Keys.Up))
+            if(!cube2.GravityAffected)
             {
-                cube2.Trans *= Matrix4.CreateTranslation(0f, 0f, 0.001f);
-                cube2.SetModelMatrix(cube2.Trans);
-            }
-            if (input.IsKeyDown(Keys.Down))
-            {
-                cube2.Trans *= Matrix4.CreateTranslation(0f, 0f, -0.001f);
-                cube2.SetModelMatrix(cube2.Trans);
+                if (input.IsKeyDown(Keys.Up))
+                {
+                    cube2.Move(0f, 0f, 0.002f);
+                }
+                if (input.IsKeyDown(Keys.Down))
+                {
+                    cube2.Move(0f, 0f, -0.002f);
+                }
             }
         }
     }

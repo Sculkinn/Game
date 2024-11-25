@@ -24,17 +24,20 @@ namespace Game
         public Vector3 Size { get; set; }
 
         public bool GravityAffected = false;
+        public int Weight;
+        public Vector3 Velocity = new Vector3(0,0, 0);
 
         private Matrix4 modelMatrix;
         public Matrix4 Trans;
 
-        public Object(List<Vector3> vertices, List<Vector2> texCoords, List<uint> indices, string texturePath, string vertexShaderPath, string fragmentShaderPath, Vector3 size, Matrix4 trans)
+        public Object(List<Vector3> vertices, List<Vector2> texCoords, List<uint> indices, string texturePath, string vertexShaderPath, string fragmentShaderPath, Vector3 size, Matrix4 trans, int weight)
         {
             this.vertices = vertices;
             this.texCoords = texCoords;
             this.indices = indices;
             this.Size = size;
             this.Trans = trans;
+            this.Weight = weight; // 0 = Anchored
 
             Vao = new VAO();
             VBO vertexVbo = new VBO(vertices);
@@ -76,6 +79,13 @@ namespace Game
             Ibo.Delete();
             Texture.Delete();
             ShaderProgram.Delete();
+        }
+
+        public void Move(float X, float Y, float Z)
+        {
+            Vector3 vec3 = new Vector3(X, Y, Z);
+            Trans *= Matrix4.CreateTranslation(vec3);
+            SetModelMatrix(Trans);
         }
     }
 }
